@@ -422,12 +422,13 @@ if files:
                 st.link_button("View", url)
             with c2:
                 # Robust Download Link
-                # Manually construct to ensure it works for all types
-                # pattern: .../upload/v12345/file.jpg  --> .../upload/fl_attachment/v12345/file.jpg
-                if "/upload/" in url:
+                # Raw files do not support transformations like fl_attachment in the URL path
+                if resource_type == "raw":
+                     dl_url = url
+                elif "/upload/" in url:
+                    # For images/videos, this forces download
                     dl_url = url.replace("/upload/", "/upload/fl_attachment/")
                 else:
-                    # Fallback if URL structure is weird (private/authenticated), just use generic link
                     dl_url = url
                     
                 st.link_button("⬇️", dl_url)
