@@ -2,11 +2,13 @@ import streamlit as st
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import cloudinary.utils
 import json
 import requests
 import io
 import smtplib
 import ssl
+import os
 from email.message import EmailMessage
 
 # --- Configuration (Bootstrap) ---
@@ -388,7 +390,14 @@ if files:
             with c1:
                 st.link_button("View", url)
             with c2:
-                dl_url = url.replace("/upload/", "/upload/fl_attachment/")
+                # Robust Download Link
+                # Use cloudinary_url to generate attachment link
+                # resource_type needs to match the file (defaults to image in listing, but let's be safe)
+                dl_url, options = cloudinary.utils.cloudinary_url(
+                    public_id, 
+                    flags="attachment",
+                    resource_type=file.get("resource_type", "image")
+                )
                 st.link_button("⬇️", dl_url)
             with c3:
                 # Rename File Popover
