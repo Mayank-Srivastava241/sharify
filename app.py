@@ -239,6 +239,10 @@ def get_contents(path, mode="Active"):
             is_deleted = "status:deleted" in tags
             public_id = res.get("public_id")
             
+            # Hide the Config File
+            if public_id == CONFIG_FILE_ID:
+                continue
+            
             # Depth Check
             if prefix and public_id.startswith(prefix):
                 rel_path = public_id[len(prefix):]
@@ -324,6 +328,9 @@ if mode == "Active Files":
                 with st.spinner("Uploading..."):
                     try:
                         folder_path = st.session_state.current_path if st.session_state.current_path else None
+                        
+                        # Determine resource type dynamically if possible, or auto
+                        # For raw files (txt, unknown), use 'raw' or 'auto'
                         cloudinary.uploader.upload(uploaded_file, folder=folder_path, resource_type="auto", tags=["status:active"])
                         st.success("Uploaded!")
                         st.rerun()
@@ -355,12 +362,6 @@ folders, files = get_contents(st.session_state.current_path, mode)
 
 if mode == "Active Files" and folders:
     st.markdown("### 📁 Folders")
-    # Using columns for Folders
-    # We want a rename option for folders too.
-    # Grid might make this UI tricky to fit inputs.
-    # Let's list them or use expanders?
-    # Grid with actions below is standard but takes space.
-    
     for i, folder in enumerate(folders):
         folder_name = folder.get("name")
         folder_path = folder.get("path")
@@ -400,22 +401,31 @@ if files:
         with cols[idx % 3]:
             public_id = file.get("public_id")
             url = file.get("secure_url")
+            resource_type = file.get("resource_type", "image")
+            format_ext = file.get("format", "")
             
-            st.image(url, use_container_width=True)
+            # Preview Logic
+            if resource_type == "image":
+                st.image(url, use_container_width=True)
+            elif resource_type == "video":
+                st.video(url)
+            elif resource_type == "raw" or format_ext == "pdf":
+                 # For raw files, show a generic icon or updated preview if supported
+                 st.markdown(f"📄 **{format_ext.upper()} File**")
+                 
             st.caption(f"{public_id}")
             
             # Actions
             c1, c2, c3 = st.columns(3)
             with c1:
+                # Generic 'View' should open in new tab for best compatibility with PDFs/Videos/Raw
                 st.link_button("View", url)
             with c2:
                 # Robust Download Link
-                # Use cloudinary_url to generate attachment link
-                # resource_type needs to match the file (defaults to image in listing, but let's be safe)
                 dl_url, options = cloudinary.utils.cloudinary_url(
                     public_id, 
                     flags="attachment",
-                    resource_type=file.get("resource_type", "image")
+                    resource_type=resource_type
                 )
                 st.link_button("⬇️", dl_url)
             with c3:
