@@ -413,8 +413,6 @@ if files:
                  # For raw files, show a generic icon or updated preview if supported
                  st.markdown(f"📄 **{format_ext.upper()} File**")
                  
-            st.caption(f"{public_id}")
-            
             # Actions
             c1, c2, c3 = st.columns(3)
             with c1:
@@ -422,11 +420,16 @@ if files:
                 st.link_button("View", url)
             with c2:
                 # Robust Download Link
-                # Raw files do not support transformations like fl_attachment in the URL path
-                if resource_type == "raw":
+                # Cloudinary treatment of PDFs as 'image' breaks fl_attachment (ERR_INVALID_RESPONSE)
+                # Raw files also break with fl_attachment.
+                # So we ONLY use fl_attachment for genuine images/videos that are NOT PDFs.
+                
+                is_pdf = format_ext.lower() == "pdf"
+                
+                if resource_type == "raw" or is_pdf:
                      dl_url = url
                 elif "/upload/" in url:
-                    # For images/videos, this forces download
+                    # For images/videos (excluding PDFs), this forces download
                     dl_url = url.replace("/upload/", "/upload/fl_attachment/")
                 else:
                     dl_url = url
