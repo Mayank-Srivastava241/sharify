@@ -198,6 +198,26 @@ def rename_item(public_id, new_name, is_folder=False):
 def get_contents(path, mode="Active"):
     folders = []
     files = []
+    
+    # helper to fetch by type
+    def fetch_by_type(r_type):
+        try:
+            prefix = path + "/" if path else ""
+            params = {
+                "resource_type": r_type, 
+                "max_results": 50, 
+                "tags": True, 
+                "context": True,
+                "type": "upload"
+            }
+            if prefix:
+                params["prefix"] = prefix
+            
+            resp = cloudinary.api.resources(**params)
+            return resp.get("resources", [])
+        except Exception:
+            return []
+
     try:
         if mode == "Active Files":
             try:
@@ -206,19 +226,13 @@ def get_contents(path, mode="Active"):
             except Exception:
                 pass
 
+        # Fetch all types
+        raw_files = []
+        raw_files.extend(fetch_by_type("image"))
+        raw_files.extend(fetch_by_type("video"))
+        raw_files.extend(fetch_by_type("raw"))
+        
         prefix = path + "/" if path else ""
-        resource_params = {
-            "resource_type": "image", 
-            "max_results": 50, 
-            "tags": True, 
-            "context": True,
-            "type": "upload"
-        }
-        if prefix:
-            resource_params["prefix"] = prefix
-
-        res_resp = cloudinary.api.resources(**resource_params)
-        raw_files = res_resp.get("resources", [])
         
         for res in raw_files:
             tags = res.get("tags", [])
@@ -228,6 +242,9 @@ def get_contents(path, mode="Active"):
             # Depth Check
             if prefix and public_id.startswith(prefix):
                 rel_path = public_id[len(prefix):]
+            elif prefix:
+                 # Should not happen if API filters correctly, but safety check
+                 continue
             else:
                 rel_path = public_id
 
@@ -238,9 +255,11 @@ def get_contents(path, mode="Active"):
                 files.append(res)
             elif mode == "Active Files" and not is_deleted:
                 files.append(res)
+                
     except Exception as e:
         st.error(f"Error fetching contents: {e}")
         
+    # Sort files by created_at maybe? For now just return list
     return folders, files
 
 
