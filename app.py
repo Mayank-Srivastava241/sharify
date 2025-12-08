@@ -422,11 +422,14 @@ if files:
                 st.link_button("View", url)
             with c2:
                 # Robust Download Link
-                dl_url, options = cloudinary.utils.cloudinary_url(
-                    public_id, 
-                    flags="attachment",
-                    resource_type=resource_type
-                )
+                # Manually construct to ensure it works for all types
+                # pattern: .../upload/v12345/file.jpg  --> .../upload/fl_attachment/v12345/file.jpg
+                if "/upload/" in url:
+                    dl_url = url.replace("/upload/", "/upload/fl_attachment/")
+                else:
+                    # Fallback if URL structure is weird (private/authenticated), just use generic link
+                    dl_url = url
+                    
                 st.link_button("⬇️", dl_url)
             with c3:
                 # Rename File Popover
