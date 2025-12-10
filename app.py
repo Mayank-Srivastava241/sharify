@@ -802,7 +802,7 @@ def main():
         page_title="📁 Supabase File Manager",
         page_icon="📁",
         layout="wide",
-        initial_sidebar_state="collapsed"
+        initial_sidebar_state="expanded"
     )
     
     # Custom CSS for modern look
